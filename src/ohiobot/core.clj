@@ -1,8 +1,9 @@
 (ns ohiobot.core
   (:require
-    [irclj.core :refer :all]
+    [irclj.core :as irclj]
     [clojure.string :as string]
-    [korma :refer :all]))
+    [korma.core :refer :all]
+    [korma.db :refer :all]))
 
 (def db-host "localhost")
 (def db-port 5432)
@@ -10,20 +11,18 @@
 (def db-user "jonathan")
 (def db-pass "")
 
-(def db (postgres {:db db-name
+(defdb db (postgres {:db db-name
                    :user db-user
                    :password db-pass}))
-(defentity users)
+(defentity user)
 
 (defn callback [irc args]
   (let [message (:text args)]
     (if
       (= (apply str (re-seq #"[A-Za-z]" (string/lower-case message))) "oh")
       (do
-        (reply irc args "IO!")
-        (j/insert! db :users
-                   {:nick (:nick args) })))))
+        (irclj/reply irc args "IO!")))))
 
 (defn start []
-  (let [connection (connect "irc.freenode.net" 6667 "Ohiobot" :callbacks {:privmsg callback})]
-    (join connection "#osuosc-hangman")))
+  (let [connection (irclj/connect "irc.freenode.net" 6667 "Ohiobot" :callbacks {:privmsg callback})]
+    (irclj/join connection "#osuosc-hangman")))
