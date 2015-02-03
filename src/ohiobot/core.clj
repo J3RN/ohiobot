@@ -58,7 +58,7 @@
                                   counts)))))
 
 (defn is-oh [message]
-  (not (nil? (re-matches #"oh\W*" (string/lower-case message)))))
+  (not (nil? (re-matches #"o\W*h\W*" (string/lower-case message)))))
 
 (defn callback [irc args]
   (let [message (:text args)

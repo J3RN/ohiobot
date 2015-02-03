@@ -7,7 +7,9 @@
     (is (true? (is-oh "oh")))
     (is (true? (is-oh "OH")))
     (is (true? (is-oh "oh!")))
-    (is (true? (is-oh "OH!!!!"))))
+    (is (true? (is-oh "OH!!!!")))
+    (is (true? (is-oh "O-H")))
+    (is (true? (is-oh "O H"))))
   (testing "oh false detection"
     (is (false? (is-oh "no")))
     (is (false? (is-oh "oh no!")))
