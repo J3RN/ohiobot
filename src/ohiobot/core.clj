@@ -62,14 +62,24 @@
 
 (defn callback [irc args]
   (let [message (:text args)
-        tokens (string/split #" " (:text args))
+        tokens (string/split (:text args) #" ")
         nick (:nick args)]
     (cond
       (is-oh message)
       (io irc args nick)
 
-      (= (first (string/split message #" ")) "#ios")
-      (io-count irc args message))))
+      (= (first tokens) "#ios")
+      (io-count irc args message)
+
+      (= (first tokens) "#join")
+      (let [channel (get tokens 1)]
+        (irclj/join irc (get tokens 1))
+        (irclj/reply irc args (str "Joined " channel)))
+
+      (= (first tokens) "#part")
+      (let [channel (get tokens 1)]
+        (irclj/reply irc args "Bye!")
+        (irclj/part irc channel)))))
 
 (defn start []
   (let [connection (irclj/connect server port nick :callbacks {:privmsg callback})]
