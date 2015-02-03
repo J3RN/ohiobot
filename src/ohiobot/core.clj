@@ -24,26 +24,22 @@
                      :password db-pass}))
 (defentity users)
 
-(defn callback [irc args]
-  (let [message (:text args)
-        nick (:nick args)]
-    (cond
-      (= (apply str (re-seq #"[A-Za-z]" (string/lower-case message))) "oh")
-      (do
-        (irclj/reply irc args (str nick ": IO!"))
-        (let [botted (:botted
-                       (first
-                         (select users
-                                 (fields [:botted])
-                                 (where {:nick nick}))))]
-          (if (= botted nil)
-            (insert users
-                    (values {:nick nick :botted 1}))
-            (update users
-                    (set-fields {:botted (+ 1 botted)})
-                    (where {:nick nick})))))
-      (= (first (string/split message #" ")) ".ios")
-      (if (> (count (string/split message #" ")) 1)
+(defn io [irc args nick]
+  (irclj/reply irc args (str nick ": IO!"))
+  (let [botted (:botted
+                 (first
+                   (select users
+                           (fields [:botted])
+                           (where {:nick nick}))))]
+    (if (= botted nil)
+      (insert users
+              (values {:nick nick :botted 1}))
+      (update users
+              (set-fields {:botted (+ 1 botted)})
+              (where {:nick nick})))))
+
+(defn io-count [irc args message]
+  (if (> (count (string/split message #" ")) 1)
         (let [user (second (string/split message #" "))]
           (let [botted (:botted
                          (first
@@ -51,15 +47,29 @@
                                    (fields [:botted])
                                    (where {:nick user}))))]
             (if (not (nil? botted))
-              (irclj/reply irc args (str user " has been OH'd " botted " times"))
-              (irclj/reply irc args (str user " has never been OH'd")))))
+              (irclj/reply irc args (str user " has been IO'd " botted " times"))
+              (irclj/reply irc args (str user " has never been IO'd")))))
         (let [counts (select users
                              (order :botted :DESC)
                              (limit 5))]
           (irclj/reply irc args (reduce
                                   #(str %1 (:nick %2) ": " (:botted %2) " ")
                                   ""
-                                  counts)))))))
+                                  counts)))))
+
+(defn is-oh [message]
+  (not (nil? (re-matches #"oh\W*" (string/lower-case message)))))
+
+(defn callback [irc args]
+  (let [message (:text args)
+        tokens (string/split #" " (:text args))
+        nick (:nick args)]
+    (cond
+      (is-oh message)
+      (io irc args nick)
+
+      (= (first (string/split message #" ")) "#ios")
+      (io-count irc args message))))
 
 (defn start []
   (let [connection (irclj/connect server port nick :callbacks {:privmsg callback})]
