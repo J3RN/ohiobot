@@ -18,6 +18,7 @@
 (def port     (get settings "irc-port"))
 (def nick     (get settings "irc-nick"))
 (def channels (get settings "channels"))
+(def master   (get settings "master"))
 
 (defdb db (postgres {:db db-name
                      :user db-user
@@ -72,14 +73,16 @@
       (io-count irc args message)
 
       (= (first tokens) "#join")
-      (let [channel (get tokens 1)]
-        (irclj/join irc (get tokens 1))
-        (irclj/reply irc args (str "Joined " channel)))
+      (if (= nick master)
+        (let [channel (get tokens 1)]
+          (irclj/join irc (get tokens 1))
+          (irclj/reply irc args (str "Joined " channel))))
 
       (= (first tokens) "#part")
-      (let [channel (get tokens 1)]
-        (irclj/reply irc args "Bye!")
-        (irclj/part irc channel)))))
+      (if (= nick master)
+        (let [channel (get tokens 1)]
+          (irclj/reply irc args "Bye!")
+          (irclj/part irc channel))))))
 
 (defn start []
   (let [connection (irclj/connect server port nick :callbacks {:privmsg callback})]
